@@ -19,7 +19,7 @@ class Canvas
 public:
     Canvas(Game *game, int width, int height);
     void init();
-    void calcFoodPosition();
+    void recalcBuffers();
 
     Game *game;
     int **board;
@@ -29,9 +29,8 @@ private:
 
     int width, height;
 
-    GLfloat *snakePosition;
-    GLfloat *foodPosition;
-    int counter;
+    GLfloat *foodSnakePosition;
+    GLfloat *foodSnakeColor;
 };
 
 #endif // CANVAS_H
