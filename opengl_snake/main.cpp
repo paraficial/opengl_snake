@@ -2,7 +2,7 @@
 #include "canvas.h"
 #include <deque>
 
-#define SIZE 10
+#define SIZE 20
 #define SPEED 5
 
 using namespace std;
