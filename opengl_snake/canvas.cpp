@@ -14,9 +14,9 @@ Canvas::Canvas(Game *game, int width, int height)
     this->foodSnakeColor= new GLfloat[(width * height + 1) * 3];
 
     recalcBuffers();
-    for (int i = 0; i < 10; i++) {
-        cout << foodSnakePosition[i] << endl;
-    }
+
+    lastTime = currentTime = high_resolution_clock::now();
+    fpsCounter = 0;
 }
 
 void Canvas::init()
@@ -54,7 +54,7 @@ void Canvas::init()
     glDepthFunc(GL_LESS);
     glEnable(GL_CULL_FACE);
 
-    glPointSize(PIXELSIZE);
+    glPointSize(PIXELSIZE-0.4f);
 
     // Set up buffers
     GLuint VertexArrayID;
@@ -84,18 +84,6 @@ void Canvas::init()
     glBindBuffer(GL_ARRAY_BUFFER, foodSnakeColorBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * (width * height + 1), foodSnakeColor, GL_STATIC_DRAW);
 
-//    GLint maxUniformBlockSize, maxUniformBlocksVertex, maxUniformAlignment;
-//    // maximum size of uniform block
-//    glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
-//    // maximum number of uniform blocks in each shader (vertex, frag, etc)
-//    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &maxUniformBlocksVertex);
-//    // alignment for multiple uniform blocks in one UBO - glBindBufferRange()
-//    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &maxUniformAlignment);
-
-//    cout << maxUniformBlockSize << endl;
-//    cout << maxUniformBlocksVertex << endl;
-//    cout << maxUniformAlignment << endl;
-
     do {
         recalcBuffers();
 
@@ -106,7 +94,7 @@ void Canvas::init()
 
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, foodSnakePositionBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * (width * height + 1) , foodSnakePosition, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * 3 * (game->snake()->size() + 1), foodSnakePosition);
         glVertexAttribPointer(
                     0,
                     3,
@@ -117,7 +105,7 @@ void Canvas::init()
 
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, foodSnakeColorBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 3 * (width * height + 1), foodSnakeColor, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * 3 * (game->snake()->size() + 1), foodSnakeColor);
         glVertexAttribPointer(
                     1,
                     3,
@@ -125,24 +113,21 @@ void Canvas::init()
                     GL_FALSE,
                     0,
                     (void*) 0);
-        glDrawArrays(GL_POINTS, 0, game->snake->size()+1);
+        glDrawArrays(GL_POINTS, 0, game->snake()->size()+1);
 
         glDisableVertexAttribArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        calcInput();
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && get<1>(game->snake->at(0)) < height/2 - 1) {
-            get<1>(game->snake->at(0))++;
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            get<1>(game->snake->at(0))--;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            get<0>(game->snake->at(0))--;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            get<0>(game->snake->at(0))++;
+        currentTime = high_resolution_clock::now();
+        dur = currentTime - lastTime;
+        if (dur.count() >= 1000/game->speed()) {
+            if (!(get<0>(direction) + get<0>(game->direction()) == 0 && get<1>(direction) + get<1>(game->direction()) == 0))
+                game->setDirection(direction);
+            game->step();
+            lastTime = high_resolution_clock::now();
         }
     }
     while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0);
@@ -154,8 +139,8 @@ void Canvas::recalcBuffers()
     float CF[3] = {0.0f, 0.0f, 1.0f};
 
     // The first vertex is always the food position.
-    foodSnakePosition[0] = get<0>(game->startfood);
-    foodSnakePosition[1] = get<1>(game->startfood);
+    foodSnakePosition[0] = get<0>(game->food());
+    foodSnakePosition[1] = get<1>(game->food());
     foodSnakePosition[2] = 0;
 
     foodSnakeColor[0] = CF[0];
@@ -164,13 +149,29 @@ void Canvas::recalcBuffers()
 
     // Fill with snake vertices.
     int offset = 3;
-    for (int i = 0; i < game->snake->size(); i+=3) {
-        foodSnakePosition[offset + i + 0] = get<0>(game->snake->at(i));
-        foodSnakePosition[offset + i + 1] = get<1>(game->snake->at(i));
-        foodSnakePosition[offset + i + 2] = 0;
+    for (int i = 0; i < game->snake()->size(); i++) {
+        foodSnakePosition[offset + i*3 + 0] = get<0>(game->snake()->at(i));
+        foodSnakePosition[offset + i*3 + 1] = get<1>(game->snake()->at(i));
+        foodSnakePosition[offset + i*3 + 2] = 0;
 
-        foodSnakeColor[offset + i + 0] = CS[0];
-        foodSnakeColor[offset + i + 1] = CS[1];
-        foodSnakeColor[offset + i + 2] = CS[2];
+        foodSnakeColor[offset + i*3 + 0] = CS[0];
+        foodSnakeColor[offset + i*3 + 1] = CS[1];
+        foodSnakeColor[offset + i*3 + 2] = CS[2];
+    }
+}
+
+void Canvas::calcInput()
+{
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        direction = tuple<int, int>(0, 1);
+    }
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        direction = tuple<int, int>(0, -1);
+    }
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        direction = tuple<int, int>(-1, 0);
+    }
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        direction = tuple<int, int>(1, 0);
     }
 }

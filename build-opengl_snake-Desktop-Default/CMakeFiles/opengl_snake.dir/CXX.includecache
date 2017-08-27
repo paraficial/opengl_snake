@@ -13,6 +13,10 @@ canvas.h
 /home/gw/Documents/opengl_snake/opengl_snake/canvas.h
 iostream
 -
+tuple
+-
+chrono
+-
 GL/glew.h
 -
 GLFW/glfw3.h
@@ -31,22 +35,20 @@ game.h
 /home/gw/Documents/opengl_snake/opengl_snake/game.h
 
 /home/gw/Documents/opengl_snake/opengl_snake/game.h
+iostream
+-
 tuple
 -
-vector
+deque
 -
 
 /home/gw/Documents/opengl_snake/opengl_snake/main.cpp
-iostream
--
 game.h
 /home/gw/Documents/opengl_snake/opengl_snake/game.h
 canvas.h
 /home/gw/Documents/opengl_snake/opengl_snake/canvas.h
-random
+deque
 -
-time.h
-/home/gw/Documents/opengl_snake/opengl_snake/time.h
 
 /home/gw/Documents/opengl_snake/opengl_snake/shader.cpp
 stdio.h

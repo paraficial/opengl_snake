@@ -1,19 +1,37 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <iostream>
 #include <tuple>
-#include <vector>
+#include <deque>
 
 using namespace std;
 class Game
 {
 public:
-    Game();
+    Game(int width, int height, int speed);
+    tuple<int, int> position();
+    tuple<int, int> direction();
+    tuple<int, int> food();
+    deque<tuple<int, int>>* snake();
+    int speed();
 
-    tuple<int, int> startposition;
-    tuple<int, int> startfood;
+    void setPosition(tuple<int, int> position);
+    void setDirection(tuple<int, int> direction);
+    void step();
 
-    vector<tuple<int, int>> *snake;
+private:
+    int width, height, _speed;
+    tuple<int, int> _position;
+    tuple<int, int> _food;
+    tuple<int, int> _direction;
+
+    deque<tuple<int, int>> *_snake;
+    void correctPosition();
+    bool validPosition(tuple<int, int> position);
+    void resetGame();
+    void positionFood();
+
 };
 
 #endif // GAME_H
